@@ -39,6 +39,14 @@ def score_painting(world, gen_id, painting):
 
 
 def save_best(ref, gen_id, generation):
+    '''
+    Saves the best painting for each generation.
+
+    Args:
+        ref: the gallery reference ID of the painting.
+        gen_id: the generation ID of the reproduction.
+        generation: the generation number.
+    '''
     created_dir = "images/created/"
     progression_dir = "images/progression/"
     try:
@@ -53,6 +61,7 @@ def save_best(ref, gen_id, generation):
 
 
 def cleanup():
+    '''Cleans up all the generated images and json files.'''
     created_dir = "images/created/"
     for filename in os.listdir(created_dir):
         if filename.endswith('png'):
@@ -141,7 +150,6 @@ def happy_little_accidents(
 if __name__ == '__main__':
     args = docopt(__doc__)
 
-    # Add 1 to end because range() is like [start, end)
     happy_little_accidents(
         start=int(args['--start']),
         end=int(args['--end']),
