@@ -30,22 +30,24 @@ class GeneticPainting(object):
         image: the PIL.Image object of the painting.
         num_strokes: how many strokes each painting can have.
         pop_size: the population size (how many paintings to create)
+        mutation_chance: the chance an organism has to mutate.
         fit_percentage: percentage of top paintings to "naturally" select
         lucky_percentage: percentage of non-top paintings that get lucky
     '''
 
     def __init__(
-        self, ref, image, num_strokes, pop_size,
+        self, ref, image, num_strokes, pop_size, mutation_chance,
         fit_percentage, lucky_percentage
     ):
         self.ref = ref
         self.image = image
         self.num_strokes = num_strokes
         self.pop_size = pop_size
+        self.mutation_chance = mutation_chance
         self.fit_percentage = fit_percentage
+        self.lucky_few = int(ceil(pop_size * lucky_percentage))
 
         self.generation = 0
-        self.lucky_few = int(ceil(pop_size * lucky_percentage))
         self.num_children = int(
             pop_size // (pop_size * fit_percentage + self.lucky_few)
         )
@@ -59,7 +61,7 @@ class GeneticPainting(object):
         ]
         color_weights = sorted(color_weights, key=itemgetter(1))
 
-        self.canvas = color_weights[-1][0]
+        self.canvas = color_weights[-1][0]  # use most common color
         self.weights = WeightedRandomColors(color_weights)
 
         self.population = self.create_population()
@@ -136,12 +138,21 @@ class GeneticPainting(object):
 
         return [painting for score, painting, gen_id in survivors]
 
-    def breed(self, generation, strategy=SPAN):
+    def mutate(self):
+        '''
+        Mutates the current population of paintings, if they're lucky, by
+        shuffling the order of their strokes.
+        '''
+        for painting in self.population:
+            if random.random() < self.mutation_chance:
+                random.shuffle(painting.strokes)
+
+    def breed(self, breeders, strategy=SPAN):
         '''
         Breeds the given generation, producing a new one!
 
         Args:
-            generation: an array of paintings to breed. The class of these
+            breeders: an array of paintings to breed. The class of these
                 paintings must have __mult__ defined.
             strategy: one of genetics.RANDOM or genetics.SPAN. If RANDOM,
                 the paintings will be paired off entirely randomly. If
@@ -155,18 +166,18 @@ class GeneticPainting(object):
 
         if strategy == RANDOM:
             while len(next_generation) < self.pop_size:
-                parent1, parent2 = random.sample(generation, 2)
+                parent1, parent2 = random.sample(breeders, 2)
                 next_generation.append(parent1 * parent2)
         elif strategy == SPAN:
-            for i in range(len(generation) // 2):
+            for i in range(len(breeders) // 2):
                 for child in range(self.num_children):
-                    parent1 = generation[i]
-                    parent2 = generation[len(generation) - (i + 1)]
+                    parent1 = breeders[i]
+                    parent2 = breeders[len(breeders) - (i + 1)]
                     next_generation.append(parent1 * parent2)
 
             # Handle two cases where the generation might be off a little
             while len(next_generation) < self.pop_size:
-                parent1, parent2 = random.sample(generation, 2)
+                parent1, parent2 = random.sample(breeders, 2)
                 next_generation.append(parent1 * parent2)
 
             next_generation = next_generation[:self.pop_size]
